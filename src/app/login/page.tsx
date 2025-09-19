@@ -3,8 +3,12 @@
 import React, { useState } from "react";
 import { callApi } from "../services/api";
 import { AUTH_ENDPOINTS } from "../services/endpoints";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const verified = searchParams.get("verified");
+  const error = searchParams.get("error");
   // State form
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
@@ -31,6 +35,7 @@ export default function LoginPage() {
         data: { email, password },
       });
       console.log("Login success:", res);
+      setIsSubmitting(false);
     } else {
       console.log("Sign Up:", { name, email, password });
       const res = await callApi(AUTH_ENDPOINTS.REGISTER, {
@@ -39,6 +44,7 @@ export default function LoginPage() {
       });
 
       console.log("Sign Up success:", res);
+      setIsSubmitting(false);
     }
   };
 
@@ -78,7 +84,19 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold mb-6 text-center text-black">
           {isLogin ? "Đăng nhập" : "Đăng ký"}
         </h1>
-
+        {verified && (
+          <p className="text-green-600">
+            Xác minh email thành công! Vui lòng đăng nhập.
+          </p>
+        )}
+        {error === "invalid_token" && (
+          <p className="text-red-600">
+            Link xác minh không hợp lệ hoặc đã hết hạn.
+          </p>
+        )}
+        {error === "server_error" && (
+          <p className="text-red-600">Có lỗi xảy ra, vui lòng thử lại sau.</p>
+        )}
         {!isLogin && (
           <div className="mb-4">
             <label className="block text-gray-700 mb-2">Name</label>
