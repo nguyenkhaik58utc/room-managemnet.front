@@ -70,7 +70,8 @@ export default function BoardingHousePage() {
                 <tr key={house.id}>
                   <td className="p-2 border">{house.name}</td>
                   <td className="p-2 border">{house.address}</td>
-                  <td className="p-2 border">{house.price.toLocaleString()}đ</td>
+                  <td className="p-2 border">{house.price}đ</td>
+                  {/* <td className="p-2 border">{house.price.toLocaleString()}đ</td> */}
                   <td className="p-2 border text-center space-x-2">
                     <button className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
                       Sửa

@@ -52,7 +52,11 @@ export default function LoginPage() {
         const res = await callApi(URL_ENDPOINTS.LOGIN, {
           method: "POST",
           data: { email, password },
+          withCredentials: true
         });
+        if (res.access_token) {
+          sessionStorage.setItem("access_token", res.access_token);
+        }
         router.push("/apartment");
       } catch (err: any) {
         alert("Lỗi: " + err.message);
