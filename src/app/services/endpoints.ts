@@ -6,4 +6,7 @@ export const URL_ENDPOINTS = {
   RESET_PASSWOED: "/api/auth/reset-password",
   APARTMENT_LIST_URL: "/api/apartments",
   REFRESH_TOKEN: "/api/auth/refresh",
+  ADDRESS_PROVINCES: "/api/address/provinces",
+  ADDRESS_DISTRICTS: "/api/address/districts",
+  ADDRESS_WARDS: "/api/address/wards/by-district",
 };
