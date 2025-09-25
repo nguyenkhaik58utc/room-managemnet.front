@@ -1,8 +1,9 @@
 "use client";
 
-import { Key, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { callApi } from "../services/api";
 import { URL_ENDPOINTS } from "../services/endpoints";
+import Link from "next/link";
 
 type BoardingHouse = {
   ward: any;
@@ -48,7 +49,6 @@ export default function BoardingHousePage() {
   // Load danh sách apartments
   useEffect(() => {
     fetchHouses();
-    fetchProvinces();
   }, []);
 
   const fetchHouses = async () => {
@@ -63,6 +63,7 @@ export default function BoardingHousePage() {
       console.error("Error loading houses:", error);
     } finally {
       setLoading(false);
+      fetchProvinces();
     }
   };
 
@@ -234,7 +235,7 @@ export default function BoardingHousePage() {
             <tbody>
               {houses.map((house) => (
                 <tr key={house.id}>
-                  <td className="p-2 border">{house.name}</td>
+                  <td className="p-2 border"><Link href={`/apartment/${house.id}/rooms`}>{house.name}</Link></td>
                   <td className="p-2 border">
                     {house.address}, {house.ward.name}, {house.district.name},{" "}
                     {house.province.name}

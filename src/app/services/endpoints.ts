@@ -4,9 +4,10 @@ export const URL_ENDPOINTS = {
   REGISTER: "/api/auth/register",
   FORGOT_PASSWOED: "/api/auth/forgot-password",
   RESET_PASSWOED: "/api/auth/reset-password",
-  APARTMENT_LIST_URL: "/api/apartments",
   REFRESH_TOKEN: "/api/auth/refresh",
+  APARTMENT_LIST_URL: "/api/apartments",
   ADDRESS_PROVINCES: "/api/address/provinces",
   ADDRESS_DISTRICTS: "/api/address/districts",
   ADDRESS_WARDS: "/api/address/wards/by-district",
+  ROOM_LIST_URL: "/api/room-apartments",
 };
