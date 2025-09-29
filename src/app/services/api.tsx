@@ -18,18 +18,24 @@ export async function callApi(endpoint: string, options: RequestOptions = {}, re
 
   let token = sessionStorage.getItem("access_token");
 
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
+  const headers: HeadersInit = {};
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+  }
+  let body: BodyInit | undefined;
+
+  if (data instanceof FormData) {
+    body = data;
+  } else if (data) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(data);
   }
 
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     method,
     headers,
-    body: data ? JSON.stringify(data) : undefined,
+    body,
     credentials: withCredentials ? "include" : "omit",
   });
 

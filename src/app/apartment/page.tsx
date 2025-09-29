@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,6 +18,8 @@ type BoardingHouse = {
   ward_id: string;
   totalRooms: number;
   emptyRooms: number;
+  thumbnail?: string | File | null;
+  gallery?: (string | File)[] | null;
 };
 
 type Option = {
@@ -39,6 +42,8 @@ export default function BoardingHousePage() {
     province_id: "",
     district_id: "",
     ward_id: "",
+    thumbnail: null,
+    gallery: [],
   });
 
   // Dropdown state
@@ -141,6 +146,8 @@ export default function BoardingHousePage() {
         province_id: house.province_id,
         district_id: house.district_id,
         ward_id: house.ward_id,
+        thumbnail: house.thumbnail || "",
+        gallery: house.gallery || [],
       });
 
       if (house.province_id) {
@@ -166,6 +173,8 @@ export default function BoardingHousePage() {
         province_id: "",
         district_id: "",
         ward_id: "",
+        thumbnail: "",
+        gallery: [],
       });
       setDistricts([]);
       setWards([]);
@@ -176,21 +185,29 @@ export default function BoardingHousePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const dataToSend = new FormData();
+      dataToSend.append("name", formData.name);
+      dataToSend.append("address", formData.address);
+      dataToSend.append("province_id", formData.province_id);
+      dataToSend.append("district_id", formData.district_id);
+      dataToSend.append("ward_id", formData.ward_id);
+
+      if (formData.thumbnail && formData.thumbnail instanceof File) {
+        dataToSend.append("thumbnails", formData.thumbnail);
+      }
+      if (formData.gallery && formData.gallery.length > 0) {
+        formData.gallery.forEach((file) => {
+          if (file instanceof File) dataToSend.append("galleries", file);
+        });
+      }
+
       if (editingHouse) {
         const updated = await callApi(
           `${URL_ENDPOINTS.APARTMENT_LIST_URL}/${editingHouse.id}`,
-          { method: "PUT", data: formData, withCredentials: true }
+          { method: "PUT", data: dataToSend, withCredentials: true }
         );
         setHouses(houses.map((h) => (h.id === editingHouse.id ? updated : h)));
       } else {
-        const dataToSend = {
-          ...formData,
-          province_id: formData.province_id,
-          district_id: formData.district_id,
-          ward_id: formData.ward_id,
-          address: formData.address,
-          name: formData.name,
-        };
         const created = await callApi(`${URL_ENDPOINTS.APARTMENT_LIST_URL}`, {
           method: "POST",
           data: dataToSend,
@@ -235,13 +252,21 @@ export default function BoardingHousePage() {
             <tbody>
               {houses.map((house) => (
                 <tr key={house.id}>
-                  <td className="p-2 border"><Link href={`/apartment/${house.id}/rooms`}>{house.name}</Link></td>
+                  <td className="p-2 border">
+                    <Link href={`/apartment/${house.id}/rooms`}>
+                      {house.name}
+                    </Link>
+                  </td>
                   <td className="p-2 border">
                     {house.address}, {house.ward.name}, {house.district.name},{" "}
                     {house.province.name}
                   </td>
-                  <td className="p-2 border text-center">{house.totalRooms??0}</td>
-                  <td className="p-2 border text-center">{house.emptyRooms??0}</td>
+                  <td className="p-2 border text-center">
+                    {house.totalRooms ?? 0}
+                  </td>
+                  <td className="p-2 border text-center">
+                    {house.emptyRooms ?? 0}
+                  </td>
                   <td className="p-2 border text-center space-x-2">
                     <button
                       onClick={() => handleOpenModal(house)}
@@ -271,86 +296,149 @@ export default function BoardingHousePage() {
               {editingHouse ? "Sửa nhà trọ" : "Thêm nhà trọ"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block mb-1 text-black">Tên nhà trọ</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-black">Địa chỉ</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                />
-              </div>
+              <div className="text-black max-h-90 overflow-y-auto">
+                <div>
+                  <label className="block mb-1">Tên nhà trọ</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                  />
+                </div>
+                <div className="mt-2">
+                  <label className="block mb-1">Địa chỉ</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block mb-1 text-black">
-                  Tỉnh / Thành phố
-                </label>
-                <select
-                  value={formData.province_id}
-                  onChange={(e) => handleProvinceChange(e.target.value)}
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                >
-                  <option value="">-- Chọn tỉnh/thành --</option>
-                  {provinces.map((p) => (
-                    <option key={p.province_id} value={p.province_id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="mt-2">
+                  <label className="block mb-1">Tỉnh / Thành phố</label>
+                  <select
+                    value={formData.province_id}
+                    onChange={(e) => handleProvinceChange(e.target.value)}
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                  >
+                    <option value="">-- Chọn tỉnh/thành --</option>
+                    {provinces.map((p) => (
+                      <option key={p.province_id} value={p.province_id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block mb-1 text-black">Quận / Huyện</label>
-                <select
-                  value={formData.district_id}
-                  onChange={(e) => handleDistrictChange(e.target.value)}
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                  disabled={!formData.province_id}
-                >
-                  <option value="">-- Chọn quận/huyện --</option>
-                  {districts.map((d) => (
-                    <option key={d.district_id} value={d.district_id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div className="mt-2">
+                  <label className="block mb-1">Quận / Huyện</label>
+                  <select
+                    value={formData.district_id}
+                    onChange={(e) => handleDistrictChange(e.target.value)}
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                    disabled={!formData.province_id}
+                  >
+                    <option value="">-- Chọn quận/huyện --</option>
+                    {districts.map((d) => (
+                      <option key={d.district_id} value={d.district_id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block mb-1 text-black">Phường / Xã</label>
-                <select
-                  value={formData.ward_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, ward_id: e.target.value })
-                  }
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                  disabled={!formData.district_id}
-                >
-                  <option value="">-- Chọn phường/xã --</option>
-                  {wards.map((w) => (
-                    <option key={w.ward_id} value={w.ward_id}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-2">
+                  <label className="block mb-1">Phường / Xã</label>
+                  <select
+                    value={formData.ward_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, ward_id: e.target.value })
+                    }
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                    disabled={!formData.district_id}
+                  >
+                    <option value="">-- Chọn phường/xã --</option>
+                    {wards.map((w) => (
+                      <option key={w.ward_id} value={w.ward_id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mt-2">
+                  <label className="block mb-1">Thumbnail (1 ảnh)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        thumbnail: e.target.files?.[0] || null,
+                      })
+                    }
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                  {formData.thumbnail && (
+                    <div className="mt-2">
+                      <img
+                        src={
+                          typeof formData.thumbnail === "string"
+                            ? process.env.NEXT_PUBLIC_AWS_DOMAIN_URL +
+                              formData.thumbnail
+                            : URL.createObjectURL(formData.thumbnail)
+                        }
+                        alt="Thumbnail preview"
+                        className="w-32 h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-2">
+                  <label className="block mb-1">Gallery (tối đa 5 ảnh)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 5) {
+                        alert("Chỉ được chọn tối đa 5 ảnh");
+                        return;
+                      }
+                      setFormData({ ...formData, gallery: files });
+                    }}
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                  {formData.gallery && formData.gallery.length > 0 && (
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {formData.gallery.map((file, idx) => (
+                        <img
+                          key={idx}
+                          src={
+                            typeof file === "string"
+                              ? process.env.NEXT_PUBLIC_AWS_DOMAIN_URL + file
+                              : URL.createObjectURL(file)
+                          }
+                          alt={`Gallery ${idx}`}
+                          className="w-24 h-24 object-cover rounded border"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2">
