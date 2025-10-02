@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,6 +12,8 @@ type RoomApartment = {
   room_num_bar: string;
   default_price: number;
   max_tenant: number;
+  thumbnail?: string | File | null;
+  gallery?: (string | File)[] | null;
 };
 
 export default function RoomApartmentPage() {
@@ -27,6 +30,8 @@ export default function RoomApartmentPage() {
     room_num_bar: "",
     default_price: 0,
     max_tenant: 0,
+    thumbnail: null,
+    gallery: [],
   });
 
   useEffect(() => {
@@ -69,6 +74,8 @@ export default function RoomApartmentPage() {
         room_num_bar: room.room_num_bar,
         default_price: room.default_price,
         max_tenant: room.max_tenant,
+        thumbnail: room.thumbnail || "",
+        gallery: room.gallery || [],
       });
     } else {
       setEditingRoom(null);
@@ -77,28 +84,42 @@ export default function RoomApartmentPage() {
         apartment_id: id ? parseInt(id.toString(), 10) : 0,
         room_num_bar: "",
         default_price: 0,
-        max_tenant: 0,
+        max_tenant: 1,
+        thumbnail: "",
+        gallery: [],
       });
     }
     setShowModal(true);
+  };
+  const formatNumber = (num: number) => {
+    if (!num) return "";
+    return num.toLocaleString("en-US");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const dataToSend = new FormData();
+      dataToSend.append("apartment_id", `${formData.apartment_id}`);
+      dataToSend.append("room_num_bar", formData.room_num_bar);
+      dataToSend.append("default_price", `${formData.default_price ?? 0}`);
+      dataToSend.append("max_tenant", `${formData.max_tenant}`);
+
+      if (formData.thumbnail && formData.thumbnail instanceof File) {
+        dataToSend.append("thumbnails", formData.thumbnail);
+      }
+      if (formData.gallery && formData.gallery.length > 0) {
+        formData.gallery.forEach((file) => {
+          if (file instanceof File) dataToSend.append("galleries", file);
+        });
+      }
       if (editingRoom) {
         const updated = await callApi(
           `${URL_ENDPOINTS.ROOM_LIST_URL}/${editingRoom.id}`,
-          { method: "PUT", data: formData, withCredentials: true }
+          { method: "PUT", data: dataToSend, withCredentials: true }
         );
         setRooms(rooms.map((h) => (h.id === editingRoom.id ? updated : h)));
       } else {
-        const dataToSend = {
-          apartment_id: formData.apartment_id,
-          room_num_bar: formData.room_num_bar,
-          default_price: formData.default_price,
-          max_tenant: formData.max_tenant,
-        };
         const created = await callApi(`${URL_ENDPOINTS.ROOM_LIST_URL}`, {
           method: "POST",
           data: dataToSend,
@@ -130,97 +151,171 @@ export default function RoomApartmentPage() {
         ) : rooms.length === 0 ? (
           <p className="text-gray-500">Chưa có phòng nào.</p>
         ) : (
-          <table className="w-full border border-gray-200 text-left text-black">
-            <thead className="bg-gray-100">
-              <tr className="text-center">
-                <th className="p-2 border">Tên</th>
-                <th className="p-2 border">Giá phòng</th>
-                <th className="p-2 border">Số người ở tối đa</th>
-                <th className="p-2 border">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rooms.map((room) => (
-                <tr key={room.id}>
-                  <td className="p-2 border">{room.room_num_bar}</td>
-                  <td className="p-2 border">
-                    {room.default_price.toLocaleString()} VND
-                  </td>
-                  <td className="p-2 border text-center">
-                    {room.max_tenant ?? 0}
-                  </td>
-                  <td className="p-2 border text-center space-x-2">
-                    <button
-                      onClick={() => handleOpenModal(room)}
-                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(room.id)}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                      Xóa
-                    </button>
-                  </td>
+          <div className="rounded-xl border border-black overflow-hidden">
+            <table className="w-full text-left text-black">
+              <thead className="bg-gray-100">
+                <tr className="text-center">
+                  <th className="p-2 border-r border-b">Tên</th>
+                  <th className="p-2 border-r border-b">Giá phòng</th>
+                  <th className="p-2 border-r border-b">Số người ở tối đa</th>
+                  <th className="p-2 border-b">Hành động</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rooms.map((room) => (
+                  <tr key={room.id} className="last:[&>td]:border-b-0">
+                    <td className="p-2 border-r border-b">
+                      {room.room_num_bar}
+                    </td>
+                    <td className="p-2 border-r border-b">
+                      {room.default_price.toLocaleString()} VND
+                    </td>
+                    <td className="p-2 border-r border-b text-center">
+                      {room.max_tenant ?? 0}
+                    </td>
+                    <td className="p-2 border-b text-center space-x-2">
+                      <button
+                        onClick={() => handleOpenModal(room)}
+                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => handleDelete(room.id)}
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg w-96 p-6">
-            <h2 className="text-xl font-bold mb-4 text-black">
+          <div className="bg-white rounded-lg shadow-lg w-96 p-6 text-black">
+            <h2 className="text-xl font-bold mb-4">
               {editingRoom ? "Sửa thông tin phòng" : "Thêm thông tin phòng"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block mb-1 text-black">Tên phòng</label>
-                <input
-                  type="text"
-                  value={formData.room_num_bar}
-                  onChange={(e) =>
-                    setFormData({ ...formData, room_num_bar: e.target.value })
-                  }
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-black">Giá phòng</label>
-                <input
-                  type="number"
-                  value={formData.default_price}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    if (value > 0 && value < 100000000) {
-                      setFormData({ ...formData, default_price: value });
+              <div className="max-h-90 overflow-y-auto">
+                <div>
+                  <label className="block mb-1">Tên phòng</label>
+                  <input
+                    type="text"
+                    value={formData.room_num_bar}
+                    onChange={(e) =>
+                      setFormData({ ...formData, room_num_bar: e.target.value })
                     }
-                  }}
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-black">
-                  Số người ở tối đa
-                </label>
-                <input
-                  type="number"
-                  value={formData.max_tenant}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    if (value > 0 && value < 5) {
-                      setFormData({ ...formData, max_tenant: value });
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Giá phòng</label>
+                  <input
+                    type="text"
+                    value={formatNumber(formData.default_price)}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/,/g, "");
+                      const numericValue = Number(rawValue);
+                      if (!isNaN(numericValue)) {
+                        if (numericValue < 1000000000)
+                          setFormData({
+                            ...formData,
+                            default_price: numericValue,
+                          });
+                      } else if (rawValue === "") {
+                        setFormData({ ...formData, default_price: 0 });
+                      }
+                    }}
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Số người ở tối đa</label>
+                  <input
+                    type="number"
+                    value={formData.max_tenant}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      if (value > 0 && value < 5) {
+                        setFormData({ ...formData, max_tenant: value });
+                      }
+                    }}
+                    className="w-full border px-3 py-2 rounded"
+                    required
+                  />
+                </div>
+
+                <div className="mt-2">
+                  <label className="block mb-1">Thumbnail (1 ảnh)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        thumbnail: e.target.files?.[0] || null,
+                      })
                     }
-                  }}
-                  className="w-full border px-3 py-2 rounded text-black"
-                  required
-                />
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                  {formData.thumbnail && (
+                    <div className="mt-2">
+                      <img
+                        src={
+                          typeof formData.thumbnail === "string"
+                            ? process.env.NEXT_PUBLIC_AWS_DOMAIN_URL +
+                              formData.thumbnail
+                            : URL.createObjectURL(formData.thumbnail)
+                        }
+                        alt="Thumbnail preview"
+                        className="w-32 h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-2">
+                  <label className="block mb-1">Gallery (tối đa 5 ảnh)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 5) {
+                        alert("Chỉ được chọn tối đa 5 ảnh");
+                        return;
+                      }
+                      setFormData({ ...formData, gallery: files });
+                    }}
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                  {formData.gallery && formData.gallery.length > 0 && (
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {formData.gallery.map((file, idx) => (
+                        <img
+                          key={idx}
+                          src={
+                            typeof file === "string"
+                              ? process.env.NEXT_PUBLIC_AWS_DOMAIN_URL + file
+                              : URL.createObjectURL(file)
+                          }
+                          alt={`Gallery ${idx}`}
+                          className="w-24 h-24 object-cover rounded border"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2">

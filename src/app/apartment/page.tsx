@@ -239,52 +239,54 @@ export default function BoardingHousePage() {
         ) : houses.length === 0 ? (
           <p className="text-gray-500">Chưa có nhà trọ nào.</p>
         ) : (
-          <table className="w-full border border-gray-200 text-left text-black">
-            <thead className="bg-gray-100">
-              <tr className="text-center">
-                <th className="p-2 border">Tên</th>
-                <th className="p-2 border">Địa chỉ</th>
-                <th className="p-2 border">Số phòng</th>
-                <th className="p-2 border">Số phòng trống</th>
-                <th className="p-2 border">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {houses.map((house) => (
-                <tr key={house.id}>
-                  <td className="p-2 border">
-                    <Link href={`/apartment/${house.id}/rooms`}>
-                      {house.name}
-                    </Link>
-                  </td>
-                  <td className="p-2 border">
-                    {house.address}, {house.ward.name}, {house.district.name},{" "}
-                    {house.province.name}
-                  </td>
-                  <td className="p-2 border text-center">
-                    {house.totalRooms ?? 0}
-                  </td>
-                  <td className="p-2 border text-center">
-                    {house.emptyRooms ?? 0}
-                  </td>
-                  <td className="p-2 border text-center space-x-2">
-                    <button
-                      onClick={() => handleOpenModal(house)}
-                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(house.id)}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                      Xóa
-                    </button>
-                  </td>
+          <div className="rounded-xl border border-black overflow-hidden">
+            <table className="w-full text-left text-black">
+              <thead className="bg-gray-100">
+                <tr className="text-center">
+                  <th className="p-2 border-r border-b">Tên</th>
+                  <th className="p-2 border-r border-b">Địa chỉ</th>
+                  <th className="p-2 border-r border-b">Số phòng</th>
+                  <th className="p-2 border-r border-b">Số phòng trống</th>
+                  <th className="p-2 border-b">Hành động</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {houses.map((house) => (
+                  <tr key={house.id} className="last:[&>td]:border-b-0">
+                    <td className="p-2 border-r border-b">
+                      <Link href={`/apartment/${house.id}/rooms`} className="text-blue-600">
+                        {house.name}
+                      </Link>
+                    </td>
+                    <td className="p-2 border-r border-b">
+                      {house.address}, {house.ward.name}, {house.district.name},{" "}
+                      {house.province.name}
+                    </td>
+                    <td className="p-2 border-r border-b text-center">
+                      {house.totalRooms ?? 0}
+                    </td>
+                    <td className="p-2 border-r border-b text-center">
+                      {house.emptyRooms ?? 0}
+                    </td>
+                    <td className="p-2 border-b text-center space-x-2">
+                      <button
+                        onClick={() => handleOpenModal(house)}
+                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => handleDelete(house.id)}
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
