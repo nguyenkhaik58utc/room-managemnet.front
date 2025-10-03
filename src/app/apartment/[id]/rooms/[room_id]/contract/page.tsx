@@ -1,27 +1,52 @@
 "use client";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { callApi } from "../../../../../services/api";
+import { URL_ENDPOINTS } from "../../../../../services/endpoints";
+
+type RoomApartment = {
+  id: number;
+  apartment_id: number;
+  room_num_bar: string;
+  default_price: number;
+  max_tenant: number;
+};
 
 export default function Contract() {
   const { room_id } = useParams();
-  const [numTenants, setNumTenants] = useState(2);
+  const [numTenants, setNumTenants] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [rooms, setRooms] = useState<RoomApartment>({} as RoomApartment);
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    try {
+      setLoading(true);
+      const res = await callApi(`${URL_ENDPOINTS.ROOM_LIST_URL}/room/${room_id}`, {
+        method: "GET",
+        withCredentials: true,
+      });
+      setRooms(res);
+      if (res && res.max_tenant) setNumTenants(res.max_tenant);
+    } catch (error) {
+      console.error("Error loading rooms:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <form className="space-y-4 bg-white p-10 rounded shadow-md text-black">
-      <div>
-        <label className="block mb-1">Số người ở</label>
-        <select
-          value={numTenants}
-          onChange={(e) => setNumTenants(Number(e.target.value))}
-          className="w-full border px-3 py-2 rounded"
-        >
-          {[...Array(5)].map((_, i) => (
-            <option key={i + 1} value={i + 1}>
-              {i + 1}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={`grid ${ numTenants == 1 ? "grid-cols-2 md:grid-cols-1" : "grid-cols-1 md:grid-cols-2"} gap-4`}>
+      <div
+        className={`grid grid-cols-1 ${
+          numTenants == 1
+            ? ""
+            : "md:grid-cols-2"
+        } gap-4`}
+      >
         {[...Array(numTenants)].map((_, index) => (
           <div
             key={index}

@@ -41,7 +41,7 @@ export default function RoomApartmentPage() {
   const fetchRooms = async () => {
     try {
       setLoading(true);
-      const res = await callApi(`${URL_ENDPOINTS.ROOM_LIST_URL}/${id}`, {
+      const res = await callApi(`${URL_ENDPOINTS.ROOM_LIST_URL}/apartment/${id}`, {
         method: "GET",
         withCredentials: true,
       });
