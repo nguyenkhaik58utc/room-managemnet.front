@@ -175,6 +175,12 @@ export default function RoomApartmentPage() {
                     </td>
                     <td className="p-2 border-b text-center space-x-2">
                       <button
+                        onClick={() => window.location.href = `/apartment/${id}/rooms/${room.id}/contract`}
+                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                      >
+                        Contract
+                      </button>
+                      <button
                         onClick={() => handleOpenModal(room)}
                         className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
                       >
