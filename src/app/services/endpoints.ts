@@ -10,4 +10,5 @@ export const URL_ENDPOINTS = {
   ADDRESS_DISTRICTS: "/api/address/districts",
   ADDRESS_WARDS: "/api/address/wards/by-district",
   ROOM_LIST_URL: "/api/room-apartments",
+  CONTRACT_LIST_URL: "/api/room-apartments",
 };
