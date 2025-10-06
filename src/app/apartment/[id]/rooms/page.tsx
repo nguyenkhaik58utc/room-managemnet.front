@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { callApi } from "../../../services/api";
 import { URL_ENDPOINTS } from "../../../services/endpoints";
 import { useParams } from "next/navigation";
@@ -33,25 +33,38 @@ export default function RoomApartmentPage() {
     thumbnail: null,
     gallery: [],
   });
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
 
-  useEffect(() => {
-    fetchRooms();
-  }, []);
-
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await callApi(`${URL_ENDPOINTS.ROOM_LIST_URL}/apartment/${id}`, {
-        method: "GET",
-        withCredentials: true,
-      });
-      setRooms(res || []);
+      const res = await callApi(
+        `${
+          URL_ENDPOINTS.ROOM_LIST_URL
+        }/apartment/${id}?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+          debouncedSearch
+        )}`,
+        {
+          method: "GET",
+          withCredentials: true,
+        }
+      );
+      setRooms(res.data || []);
+      setTotal(res.total || 0);
     } catch (error) {
       console.error("Error loading rooms:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, page, pageSize, debouncedSearch]);
+
+  useEffect(() => {
+    fetchRooms();
+  }, [fetchRooms]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Bạn có chắc muốn xóa phòng này?")) return;
@@ -133,6 +146,16 @@ export default function RoomApartmentPage() {
     }
   };
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 1000);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [search]);
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-md p-6">
@@ -144,6 +167,42 @@ export default function RoomApartmentPage() {
           >
             + Thêm phòng trọ
           </button>
+        </div>
+
+        <div className="flex justify-between items-center mb-4 text-black">
+          <input
+            type="text"
+            placeholder="Tìm theo tên phòng trọ..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="border px-3 py-2 rounded w-64"
+          />
+
+          {rooms && rooms.length > 0 && (
+            <div className="space-x-2">
+              <button
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                disabled={page === 1}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                ←
+              </button>
+              <span>{page}</span>
+              <button
+                onClick={() => {
+                  const maxPage = Math.ceil(total / pageSize);
+                  if (page < maxPage) setPage(page + 1);
+                }}
+                disabled={page >= Math.ceil(total / pageSize)}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                →
+              </button>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -175,7 +234,9 @@ export default function RoomApartmentPage() {
                     </td>
                     <td className="p-2 border-b text-center space-x-2">
                       <button
-                        onClick={() => window.location.href = `/apartment/${id}/rooms/${room.id}/contract`}
+                        onClick={() =>
+                          (window.location.href = `/apartment/${id}/rooms/${room.id}/contract`)
+                        }
                         className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
                       >
                         Contract

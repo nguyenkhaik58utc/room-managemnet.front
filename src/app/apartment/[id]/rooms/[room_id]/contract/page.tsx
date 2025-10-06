@@ -200,12 +200,12 @@ export default function Contract() {
         
         <div>
           <label className="block mb-1">Ảnh số điện hiện tại</label>
-          <input className="w-full border px-3 py-2 rounded" type="file" accept="image/*" name="tenants[1][waterImage]" />
+          <input className="w-full border px-3 py-2 rounded" type="file" accept="image/*" name="electricityImage" />
         </div>
         
         <div>
           <label className="block mb-1">Ảnh số nước hiện tại</label>
-          <input className="w-full border px-3 py-2 rounded" type="file" accept="image/*" name="tenants[1][waterImage]" />
+          <input className="w-full border px-3 py-2 rounded" type="file" accept="image/*" name="waterImage" />
         </div>
 
         <div>

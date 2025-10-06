@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { callApi } from "../services/api";
 import { URL_ENDPOINTS } from "../services/endpoints";
 import Link from "next/link";
@@ -46,31 +46,40 @@ export default function BoardingHousePage() {
     gallery: [],
   });
 
-  // Dropdown state
   const [provinces, setProvinces] = useState<Option[]>([]);
   const [districts, setDistricts] = useState<Option[]>([]);
   const [wards, setWards] = useState<Option[]>([]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
 
-  // Load danh sách apartments
-  useEffect(() => {
-    fetchHouses();
-  }, []);
-
-  const fetchHouses = async () => {
+  const fetchHouses = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await callApi(`${URL_ENDPOINTS.APARTMENT_LIST_URL}`, {
-        method: "GET",
-        withCredentials: true,
-      });
-      setHouses(res || []);
+      const res = await callApi(
+        `${
+          URL_ENDPOINTS.APARTMENT_LIST_URL
+        }?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(
+          debouncedSearch
+        )}`,
+        { method: "GET", withCredentials: true }
+      );
+
+      setHouses(res.data || []);
+      setTotal(res.total || 0);
     } catch (error) {
       console.error("Error loading houses:", error);
     } finally {
       setLoading(false);
       fetchProvinces();
     }
-  };
+  }, [page, pageSize, debouncedSearch]);
+
+  useEffect(() => {
+    fetchHouses();
+  }, [fetchHouses]);
 
   const fetchProvinces = async () => {
     try {
@@ -83,19 +92,14 @@ export default function BoardingHousePage() {
       console.error("Error loading provinces:", err);
     }
   };
-  useEffect(() => {
-    if (provinces && provinces.length > 0) {
-      handleProvinceChange(provinces[0].province_id);
-    }
-  }, [provinces]);
-
-  const handleProvinceChange = async (provinceId: string) => {
-    setFormData({
-      ...formData,
+  const handleProvinceChange = useCallback(async (provinceId: string) => {
+    setFormData((prev) => ({
+      ...prev,
       province_id: provinceId,
       district_id: "",
       ward_id: "",
-    });
+    }));
+
     try {
       const res = await callApi(
         `${URL_ENDPOINTS.ADDRESS_DISTRICTS}/${provinceId}`,
@@ -106,14 +110,20 @@ export default function BoardingHousePage() {
     } catch (err) {
       console.error("Error loading districts:", err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (provinces && provinces.length > 0) {
+      handleProvinceChange(provinces[0].province_id);
+    }
+  }, [provinces, handleProvinceChange]);
 
   const handleDistrictChange = async (districtId: string) => {
-    setFormData({
+    setFormData((prev) => ({
       ...formData,
       district_id: districtId,
       ward_id: "",
-    });
+    }));
     try {
       const res = await callApi(
         `${URL_ENDPOINTS.ADDRESS_WARDS}/${districtId}`,
@@ -140,7 +150,7 @@ export default function BoardingHousePage() {
   const handleOpenModal = async (house?: BoardingHouse) => {
     if (house) {
       setEditingHouse(house);
-      setFormData({
+      setFormData((prev) => ({
         name: house.name,
         address: house.address,
         province_id: house.province_id,
@@ -148,7 +158,7 @@ export default function BoardingHousePage() {
         ward_id: house.ward_id,
         thumbnail: house.thumbnail || "",
         gallery: house.gallery || [],
-      });
+      }));
 
       if (house.province_id) {
         const resDistricts = await callApi(
@@ -167,7 +177,7 @@ export default function BoardingHousePage() {
       }
     } else {
       setEditingHouse(null);
-      setFormData({
+      setFormData((prev) => ({
         name: "",
         address: "",
         province_id: "",
@@ -175,7 +185,7 @@ export default function BoardingHousePage() {
         ward_id: "",
         thumbnail: "",
         gallery: [],
-      });
+      }));
       setDistricts([]);
       setWards([]);
     }
@@ -221,6 +231,16 @@ export default function BoardingHousePage() {
     }
   };
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 1000);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [search]);
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-md p-6">
@@ -234,10 +254,46 @@ export default function BoardingHousePage() {
           </button>
         </div>
 
+        <div className="flex justify-between items-center mb-4 text-black">
+          <input
+            type="text"
+            placeholder="Tìm theo tên nhà trọ..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="border px-3 py-2 rounded w-64"
+          />
+
+          {houses && houses.length > 0 && (
+            <div className="space-x-2">
+              <button
+                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                disabled={page === 1}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                ←
+              </button>
+              <span>{page}</span>
+              <button
+                onClick={() => {
+                  const maxPage = Math.ceil(total / pageSize);
+                  if (page < maxPage) setPage(page + 1);
+                }}
+                disabled={page >= Math.ceil(total / pageSize)}
+                className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </div>
+
         {loading ? (
-          <p className="text-gray-500">Đang tải...</p>
+          <p className="text-gray-500 p-4">Đang tải...</p>
         ) : houses.length === 0 ? (
-          <p className="text-gray-500">Chưa có nhà trọ nào.</p>
+          <p className="text-gray-500 p-4">Chưa có nhà trọ nào.</p>
         ) : (
           <div className="rounded-xl border border-black overflow-hidden">
             <table className="w-full text-left text-black">
@@ -254,7 +310,10 @@ export default function BoardingHousePage() {
                 {houses.map((house) => (
                   <tr key={house.id} className="last:[&>td]:border-b-0">
                     <td className="p-2 border-r border-b">
-                      <Link href={`/apartment/${house.id}/rooms`} className="text-blue-600">
+                      <Link
+                        href={`/apartment/${house.id}/rooms`}
+                        className="text-blue-600"
+                      >
                         {house.name}
                       </Link>
                     </td>
@@ -305,7 +364,10 @@ export default function BoardingHousePage() {
                     type="text"
                     value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
+                      setFormData((prev) => ({
+                        ...formData,
+                        name: e.target.value,
+                      }))
                     }
                     className="w-full border px-3 py-2 rounded"
                     required
@@ -317,7 +379,10 @@ export default function BoardingHousePage() {
                     type="text"
                     value={formData.address}
                     onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
+                      setFormData((prev) => ({
+                        ...formData,
+                        address: e.target.value,
+                      }))
                     }
                     className="w-full border px-3 py-2 rounded"
                     required
@@ -364,7 +429,10 @@ export default function BoardingHousePage() {
                   <select
                     value={formData.ward_id}
                     onChange={(e) =>
-                      setFormData({ ...formData, ward_id: e.target.value })
+                      setFormData((prev) => ({
+                        ...formData,
+                        ward_id: e.target.value,
+                      }))
                     }
                     className="w-full border px-3 py-2 rounded"
                     required
@@ -385,10 +453,10 @@ export default function BoardingHousePage() {
                     type="file"
                     accept="image/*"
                     onChange={(e) =>
-                      setFormData({
+                      setFormData((prev) => ({
                         ...formData,
                         thumbnail: e.target.files?.[0] || null,
-                      })
+                      }))
                     }
                     className="w-full border px-3 py-2 rounded"
                   />
@@ -420,7 +488,7 @@ export default function BoardingHousePage() {
                         alert("Chỉ được chọn tối đa 5 ảnh");
                         return;
                       }
-                      setFormData({ ...formData, gallery: files });
+                      setFormData((prev) => ({ ...formData, gallery: files }));
                     }}
                     className="w-full border px-3 py-2 rounded"
                   />
