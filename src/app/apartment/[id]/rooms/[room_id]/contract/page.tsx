@@ -53,22 +53,27 @@ export default function Contract() {
       });
     }
 
-    const contract = {
-      tenants,
-      payment_cycle: formData.get("payment_cycle"),
-      price_per_cycle: formData.get("price_per_cycle"),
-      electricity_type: formData.get("electricity_type"),
-      water_type: formData.get("water_type"),
-      electricity_price: formData.get("electricity_price"),
-      water_price: formData.get("water_price"),
-      electricity_start: formData.get("electricity_start"),
-      water_start: formData.get("water_start"),
-      num_people: formData.get("num_people"),
-      note: formData.get("note"),
-      start_date: formData.get("start_date"),
-      end_date: formData.get("end_date"),
-      room_id: rooms.id,
-    };
+    const contract = new FormData();
+
+    contract.append("tenants", JSON.stringify(tenants));
+    contract.append("payment_cycle", formData.get("payment_cycle"));
+    contract.append("price_per_cycle", formData.get("price_per_cycle"));
+    contract.append("electricity_type", formData.get("electricity_type"));
+    contract.append("water_type", formData.get("water_type"));
+    contract.append("electricity_price", formData.get("electricity_price"));
+    contract.append("water_price", formData.get("water_price"));
+    contract.append("electricity_start", formData.get("electricity_start"));
+    contract.append("water_start", formData.get("water_start"));
+    contract.append("num_people", formData.get("num_people"));
+    contract.append("note", formData.get("note"));
+    contract.append("start_date", formData.get("start_date"));
+    contract.append("end_date", formData.get("end_date"));
+    contract.append("room_id", rooms.id.toString());
+
+    const elecFile = formData.get("electricityImage");
+    const waterFile = formData.get("waterImage");
+    if (elecFile) contract.append("electricityImages", elecFile);
+    if (waterFile) contract.append("waterImages", waterFile);
 
     console.log("📦 Contract payload:", contract);
 
@@ -197,12 +202,12 @@ export default function Contract() {
           <label className="block mb-1">Số đồng hồ nước ban đầu</label>
           <input name="water_start" type="number" className="w-full border px-3 py-2 rounded" required />
         </div>
-        
+
         <div>
           <label className="block mb-1">Ảnh số điện hiện tại</label>
           <input className="w-full border px-3 py-2 rounded" type="file" accept="image/*" name="electricityImage" />
         </div>
-        
+
         <div>
           <label className="block mb-1">Ảnh số nước hiện tại</label>
           <input className="w-full border px-3 py-2 rounded" type="file" accept="image/*" name="waterImage" />
